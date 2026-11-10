@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ⚠️ Put your admin email(s) here — same as VITE_ADMIN_EMAILS
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.token.email in ['admin@demo.com'];
+    }
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Each user's profile. Admins can read everyone (Admin dashboard).
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid);
+      allow delete: if isAdmin();
+
+      match /{sub=**} {
+        allow read, write: if isOwner(uid);
+        allow read: if isAdmin();
+      }
+    }
+
+    function signedIn() { return request.auth != null; }
+
+    // Community: members may not share links or phone numbers. Admins can.
+    function noContact(t) {
+      return !t.matches('(?is).*(https?://|www[.]|t[.]me|wa[.]me|[a-z0-9-][.](com|net|org|io|co|me|ly|gg|app|shop|store|xyz|info|biz|ng|uk|us|link|site|online|ru)([^a-z]|$)).*')
+          && !t.matches('(?s).*[0-9]([ ().-]*[0-9]){8,}.*')
+          && !t.matches('(?is).*[a-z0-9._%+-]+@[a-z0-9-]+[.][a-z]{2,}.*');
+    }
+    function validMessage(max) {
+      let d = request.resource.data;
+      return d.uid == request.auth.uid && d.body is string && d.body.size() > 0 && d.body.size() <= max
+        && (isAdmin() || (d.get('admin', false) == false && noContact(d.body)));
+    }
+
+    // Public member cards (name, xp, streak, photo) for names, tiers and the leaderboard.
+    match /members/{uid} {
+      allow read: if signedIn();
+      allow write: if isOwner(uid);
+    }
+
+    match /posts/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validMessage(2000);
+      // Authors can't edit text after posting; anyone signed in can only like / bump reply count.
+      allow update: if signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentCount']);
+      allow delete: if (signedIn() && resource.data.uid == request.auth.uid) || isAdmin();
+
+      match /comments/{cid} {
+        allow read: if signedIn();
+        allow create: if signedIn() && validMessage(1000);
+        allow delete: if (signedIn() && resource.data.uid == request.auth.uid) || isAdmin();
+      }
+    }
+
+    // Updates / announcements: everyone signed in reads, only admins write.
+    match /announcements/{id} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+  }
+}
