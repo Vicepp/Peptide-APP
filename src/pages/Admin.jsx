@@ -4,6 +4,7 @@ import Icon from '../components/Icon'
 import NameTag from '../components/NameTag'
 import { api, today } from '../lib/store'
 import { GOALS, levelFor } from '../config'
+import { useAuth } from '../lib/auth'
 
 const ago = (iso) => {
   if (!iso) return '—'
@@ -30,8 +31,21 @@ export default function Admin() {
   const [q, setQ] = useState('')
   const [ann, setAnn] = useState([])
   const [f, setF] = useState({ title: '', body: '' })
+  const { user } = useAuth()
   const load = () => {
-    api.allUsers().then(setUsers).catch((e) => setErr(e.message))
+    setErr('')
+    api.allUsers()
+      // On a permission error, refresh the login token once and retry
+      // (a recently verified email isn't in the old token yet).
+      .catch(async (e) => {
+        if (!String(e?.code || e?.message).includes('permission')) throw e
+        await api.refreshToken()
+        return api.allUsers()
+      })
+      .then(setUsers)
+      .catch((e) => setErr(String(e?.code || e?.message).includes('permission')
+        ? `The database rules don't accept ${user?.email} as an admin yet. In Firebase → Firestore → Rules, make sure this exact email is in the isAdmin() list, then click Publish.`
+        : e.message))
     api.announcements().then(setAnn).catch(() => {})
   }
   useEffect(load, [])
@@ -58,7 +72,7 @@ export default function Admin() {
     <>
       <TopBar title="Admin dashboard" right={users && <button className="btn sm ghost" onClick={() => exportCsv(list)}>Export CSV</button>} />
       <div className="page fade-up">
-        {err && <div className="alert">Could not load users: {err}. Check that your email is listed in firestore.rules.</div>}
+        {err && <div className="alert stack">{err}<button className="btn sm" style={{ alignSelf: 'flex-start' }} onClick={load}>Try again</button></div>}
         <div className="grid g4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
           {stats.map(([l, v, ic]) => (
             <div key={l} className="card stat"><span className="ic"><Icon name={ic} /></span><div><b>{v}</b><span className="tiny muted">{l}</span></div></div>

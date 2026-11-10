@@ -44,6 +44,11 @@ const firebaseBackend = {
     const { auth, A } = await getFb()
     if (auth.currentUser) await A.sendEmailVerification(auth.currentUser)
   },
+  /** Forces a fresh login token (picks up a just-verified email for database rules). */
+  async refreshToken() {
+    const { auth } = await getFb()
+    if (auth.currentUser) { await auth.currentUser.reload(); await auth.currentUser.getIdToken(true) }
+  },
   /** Re-reads the account from Firebase so a just-clicked verification link is picked up. */
   async reloadUser() {
     const { auth } = await getFb()
@@ -199,6 +204,7 @@ const demoBackend = {
     return user
   },
   async sendVerification() {},
+  async refreshToken() {},
   async reloadUser() { return { ...ls.get('pw_session', null), verified: true } },
   async google() {
     throw new Error('Google sign-in needs Firebase. Add your Firebase keys to enable it.')
