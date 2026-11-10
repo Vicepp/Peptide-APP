@@ -30,7 +30,7 @@ async function getFb() {
 const firebaseBackend = {
   async onAuth(cb) {
     const { auth, A } = await getFb()
-    return A.onAuthStateChanged(auth, (u) => cb(u ? { uid: u.uid, email: u.email, name: u.displayName, photo: u.photoURL } : null))
+    return A.onAuthStateChanged(auth, (u) => cb(u ? { uid: u.uid, email: u.email, name: u.displayName, photo: u.photoURL, verified: u.emailVerified } : null))
   },
   async signUp(name, email, password) {
     const { auth, A } = await getFb()

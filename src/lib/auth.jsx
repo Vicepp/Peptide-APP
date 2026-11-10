@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { api, touchProfile, today } from './store'
-import { isAdminEmail } from '../config'
+import { isAdminEmail, FIREBASE_ENABLED } from '../config'
 
 const Ctx = createContext(null)
 
@@ -60,7 +60,8 @@ export function AuthProvider({ children }) {
 
   const value = {
     user, profile, updateProfile, markRead, addXp, saveReadTime,
-    isAdmin: isAdminEmail(user?.email),
+    // With Firebase, admin also requires a verified email (Google sign-in is always verified).
+    isAdmin: isAdminEmail(user?.email) && (!FIREBASE_ENABLED || !!user?.verified),
     loading: user === undefined,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

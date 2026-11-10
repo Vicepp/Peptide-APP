@@ -65,7 +65,7 @@ export default function AuthPage({ mode }) {
         {info && <div className="alert info">{info}</div>}
         {signup && (
           <div className="field"><label htmlFor="name">Full name</label>
-            <input id="name" className="input" required value={f.name} onChange={set('name')} placeholder="e.g. Ada Okafor" autoComplete="name" /></div>
+            <input id="name" className="input" required value={f.name} onChange={set('name')} placeholder="e.g. Emily Johnson" autoComplete="name" /></div>
         )}
         <div className="field"><label htmlFor="email">Email</label>
           <input id="email" type="email" className="input" required value={f.email} onChange={set('email')} placeholder="you@example.com" autoComplete="email" /></div>

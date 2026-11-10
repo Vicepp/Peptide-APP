@@ -29,7 +29,7 @@ Without Firebase keys the app runs in **demo mode**, which saves data in the bro
 1. Go to https://console.firebase.google.com and create a project.
 2. **Build → Authentication → Get started**, then enable **Email/Password** and **Google**.
 3. **Build → Firestore Database → Create database** (production mode).
-4. **Firestore → Rules**: paste in the contents of `firestore.rules`. Put **your** admin email in place of `admin@demo.com`, then click Publish.
+4. **Firestore → Rules**: paste in the contents of `firestore.rules`. Replace the `admin1@example.com` / `admin2@example.com` placeholders with **your** admin emails, then click Publish.
 5. **Project settings → Your apps → Web (</>)**: register the app and copy the config values.
 6. Copy `.env.example` to `.env.local` and fill in the values. Set `VITE_ADMIN_EMAILS` to your email.
 7. Restart `npm run dev`.
