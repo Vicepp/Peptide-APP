@@ -1,5 +1,5 @@
 // App-wide settings. Change the name here to rebrand the whole app.
-export const APP_NAME = 'PepWise'
+export const APP_NAME = 'PepVella'
 export const APP_TAGLINE = 'Know your peptides. Dose with clarity.'
 
 export const firebaseConfig = {

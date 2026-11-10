@@ -1,4 +1,4 @@
-# PepWise: Peptide Calculator & Guide
+# PepVella: Peptide Calculator & Guide
 
 A mobile-first web app (it works on phones and desktop browsers, and can be installed to the home screen). It includes:
 
