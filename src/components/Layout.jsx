@@ -4,6 +4,7 @@ import Icon from './Icon'
 import { useAuth } from '../lib/auth'
 import { APP_NAME, FIREBASE_ENABLED } from '../config'
 import { api, ls } from '../lib/store'
+import { useActivityTracker } from '../lib/tracker'
 
 export function Brand() {
   return (
@@ -49,8 +50,9 @@ function AnnouncementPopup() {
 }
 
 export default function Layout() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
   const { pathname } = useLocation()
+  useActivityTracker(user?.uid)
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   return (
     <div className="shell">

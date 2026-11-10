@@ -5,6 +5,8 @@ import NameTag from '../components/NameTag'
 import { api, today } from '../lib/store'
 import { GOALS, levelFor } from '../config'
 import { useAuth } from '../lib/auth'
+import { useNavigate } from 'react-router-dom'
+import { fmtDur, placeLabel } from '../lib/analytics'
 
 const ago = (iso) => {
   if (!iso) return '—'
@@ -16,9 +18,9 @@ const ago = (iso) => {
 }
 
 function exportCsv(users) {
-  const cols = ['name', 'email', 'createdAt', 'lastLogin', 'loginCount', 'streak', 'xp', 'experience', 'goals', 'device']
+  const cols = ['name', 'email', 'createdAt', 'lastLogin', 'loginCount', 'streak', 'xp', 'experience', 'goals', 'device', 'place', 'totalSecs']
   const esc = (v) => `"${String(Array.isArray(v) ? v.join('; ') : v ?? '').replace(/"/g, '""')}"`
-  const csv = [cols.join(','), ...users.map((u) => cols.map((c) => esc(u[c])).join(','))].join('\n')
+  const csv = [cols.join(','), ...users.map((u) => cols.map((c) => esc(c === 'place' ? placeLabel(u.location) : u[c])).join(','))].join('\n')
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
   a.download = `users-${today()}.csv`
@@ -32,6 +34,7 @@ export default function Admin() {
   const [ann, setAnn] = useState([])
   const [f, setF] = useState({ title: '', body: '' })
   const { user } = useAuth()
+  const nav = useNavigate()
   const load = () => {
     setErr('')
     api.allUsers()
@@ -66,6 +69,8 @@ export default function Admin() {
     ['Active today', users.filter((u) => u.lastActiveDate === t).length, 'fire'],
     ['New this week', users.filter((u) => u.createdAt && Date.now() - new Date(u.createdAt) < 7 * 864e5).length, 'star'],
     ['Mobile users', users.filter((u) => u.device === 'Mobile').length, 'syringe'],
+    ['Countries', new Set(users.map((u) => u.location?.country).filter(Boolean)).size, 'flask'],
+    ['Avg. time / user', fmtDur(users.reduce((n, u) => n + (u.totalSecs || 0), 0) / (users.length || 1)), 'chart'],
   ] : []
 
   return (
@@ -79,16 +84,18 @@ export default function Admin() {
           ))}
         </div>
 
-        <div className="section-title"><h2>Users</h2></div>
+        <div className="section-title"><h2>Users</h2><span className="tiny muted">Tap a user to see their analytics</span></div>
         <input className="input" placeholder="Search by name or email…" value={q} onChange={(e) => setQ(e.target.value)} style={{ marginBottom: 12 }} />
         <div className="card" style={{ padding: 0 }}>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>User</th><th>Joined</th><th>Last login</th><th>Logins</th><th>Streak</th><th>Level</th><th>Interests</th><th>Device</th></tr></thead>
+              <thead><tr><th>User</th><th>Location</th><th>Time in app</th><th>Joined</th><th>Last login</th><th>Logins</th><th>Streak</th><th>Level</th><th>Interests</th><th>Device</th></tr></thead>
               <tbody>
                 {list.map((u) => (
-                  <tr key={u.id}>
+                  <tr key={u.id} className="clickable" onClick={() => nav(`/admin/users/${u.id}`)} title="View analytics">
                     <td><NameTag name={u.name || '—'} xp={u.xp} size={18} /><div className="tiny muted">{u.email}</div></td>
+                    <td className="small">{placeLabel(u.location)}</td>
+                    <td className="small bold">{u.totalSecs ? fmtDur(u.totalSecs) : '—'}</td>
                     <td className="small">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
                     <td className="small">{ago(u.lastLogin)}</td>
                     <td>{u.loginCount || 0}</td>
@@ -98,7 +105,7 @@ export default function Admin() {
                     <td className="small">{u.device || '—'}</td>
                   </tr>
                 ))}
-                {users && list.length === 0 && <tr><td colSpan={8} className="empty">No users found.</td></tr>}
+                {users && list.length === 0 && <tr><td colSpan={10} className="empty">No users found.</td></tr>}
               </tbody>
             </table>
           </div>

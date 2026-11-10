@@ -78,7 +78,7 @@ export default function AuthPage({ mode }) {
         <p className="center muted small">
           {signup ? <>Already have an account? <Link className="link" to="/login">Log in</Link></> : <>New here? <Link className="link" to="/signup">Create an account</Link></>}
         </p>
-        <p className="tiny faint center">By continuing you agree this app is a research reference only and not medical advice.</p>
+        <p className="tiny faint center">By continuing you agree this app is a research reference only and not medical advice, and that we record app usage (pages viewed, time in app and approximate city/country) to improve {APP_NAME}.</p>
       </form>
     </div>
   )

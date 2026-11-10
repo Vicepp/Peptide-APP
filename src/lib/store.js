@@ -101,6 +101,23 @@ const firebaseBackend = {
     const { db, F } = await getFb()
     await F.deleteDoc(F.doc(db, 'users', uid, col, id))
   },
+  /** Usage analytics: adds active seconds + page visits to users/{uid}/activity/{date}. */
+  async trackActivity(uid, date, { secs = 0, visits = [], loc = null }) {
+    const { db, F } = await getFb()
+    const now = new Date().toISOString()
+    const day = { date, lastSeen: now, secs: F.increment(secs) }
+    if (visits.length) day.visits = F.arrayUnion(...visits)
+    if (loc) day.loc = loc
+    await F.setDoc(F.doc(db, 'users', uid, 'activity', date), day, { merge: true })
+    const u = { lastSeen: now, totalSecs: F.increment(secs) }
+    if (loc) { u.location = loc; u.locations = F.arrayUnion(`${loc.city ? loc.city + ', ' : ''}${loc.country}`) }
+    await F.setDoc(F.doc(db, 'users', uid), u, { merge: true })
+  },
+  async getActivity(uid, days = 60) {
+    const { db, F } = await getFb()
+    const s = await F.getDocs(F.query(F.collection(db, 'users', uid, 'activity'), F.orderBy('date', 'desc'), F.limit(days)))
+    return s.docs.map((d) => ({ id: d.id, ...d.data() }))
+  },
   async allUsers() {
     const { db, F } = await getFb()
     const s = await F.getDocs(F.collection(db, 'users'))
@@ -234,6 +251,21 @@ const demoBackend = {
     ls.set(`pw_${col}_${uid}`, ls.get(`pw_${col}_${uid}`, []).filter((x) => x.id !== id))
   },
   async allUsers() { return Object.values(ls.get('pw_users', {})) },
+  async trackActivity(uid, date, { secs = 0, visits = [], loc = null }) {
+    const all = ls.get('pw_activity_' + uid, {})
+    const d = all[date] || { id: date, date, secs: 0, visits: [] }
+    d.secs += secs; d.visits = [...d.visits, ...visits]; d.lastSeen = new Date().toISOString()
+    if (loc) d.loc = loc
+    all[date] = d
+    ls.set('pw_activity_' + uid, all)
+    const users = ls.get('pw_users', {})
+    const u = users[uid] || { id: uid }
+    u.totalSecs = (u.totalSecs || 0) + secs; u.lastSeen = d.lastSeen
+    if (loc) { u.location = loc; u.locations = [...new Set([...(u.locations || []), `${loc.city ? loc.city + ', ' : ''}${loc.country}`])] }
+    users[uid] = u
+    ls.set('pw_users', users)
+  },
+  async getActivity(uid) { return Object.values(ls.get('pw_activity_' + uid, {})).sort((a, b) => b.date.localeCompare(a.date)) },
   async announcements() { return ls.get('pw_announcements', []) },
   async postAnnouncement(data) { ls.set('pw_announcements', [{ id: uid8(), ...data }, ...ls.get('pw_announcements', [])]) },
   async deleteAnnouncement(id) { ls.set('pw_announcements', ls.get('pw_announcements', []).filter((a) => a.id !== id)) },

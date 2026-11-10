@@ -19,6 +19,7 @@ const Log = lazy(() => import('./pages/Log'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Community = lazy(() => import('./pages/Community'))
+const AdminUser = lazy(() => import('./pages/AdminUser'))
 
 export const Splash = () => <div className="splash"><div className="spinner" /></div>
 
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="community" element={<Community />} />
           <Route path="admin" element={isAdmin ? <Admin /> : <Navigate to="/" replace />} />
+          <Route path="admin/users/:uid" element={isAdmin ? <AdminUser /> : <Navigate to="/" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
