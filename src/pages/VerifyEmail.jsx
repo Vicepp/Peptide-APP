@@ -70,8 +70,7 @@ export default function VerifyEmail() {
         </div>
 
         <div className="card flat stack" style={{ padding: 14 }}>
-          <div className="row small"><Icon name="check" size={18} className="accent" /> Check your inbox <b>and spam/junk folder</b></div>
-          <div className="row small"><Icon name="check" size={18} className="accent" /> The email comes from Firebase (noreply@…firebaseapp.com)</div>
+          <div className="row small"><Icon name="check" size={18} className="accent" /><span>Check your inbox <b>and spam/junk folder</b></span></div>
           <div className="row small"><Icon name="check" size={18} className="accent" /> This page continues automatically once verified</div>
         </div>
 
