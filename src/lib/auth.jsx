@@ -46,6 +46,13 @@ export function AuthProvider({ children }) {
     await updateProfile({ readIds: [...read, key], xp: (profile.xp || 0) + xp })
   }, [user, profile, updateProfile])
 
+  /** Re-checks email verification with Firebase. Returns true once verified. */
+  const refreshUser = useCallback(async () => {
+    const u = await api.reloadUser()
+    if (u) setUser((prev) => ({ ...prev, ...u }))
+    return !!u?.verified
+  }, [])
+
   /** Saves seconds spent reading a lesson (only ever increases). */
   const saveReadTime = useCallback(async (id, secs) => {
     const cur = profileRef.current?.readSecs || {}
@@ -59,8 +66,9 @@ export function AuthProvider({ children }) {
   }, [profile, updateProfile])
 
   const value = {
-    user, profile, updateProfile, markRead, addXp, saveReadTime,
+    user, profile, updateProfile, markRead, addXp, saveReadTime, refreshUser,
     // With Firebase, admin also requires a verified email (Google sign-in is always verified).
+    needsVerify: FIREBASE_ENABLED && !!user && !user.verified,
     isAdmin: isAdminEmail(user?.email) && (!FIREBASE_ENABLED || !!user?.verified),
     loading: user === undefined,
   }

@@ -7,6 +7,7 @@ import Onboarding from './pages/Onboarding'
 import AuthPage from './pages/Auth'
 import Setup from './pages/Setup'
 import Home from './pages/Home'
+import VerifyEmail from './pages/VerifyEmail'
 
 const Library = lazy(() => import('./pages/Library'))
 const PeptideDetail = lazy(() => import('./pages/PeptideDetail'))
@@ -22,10 +23,11 @@ const Community = lazy(() => import('./pages/Community'))
 export const Splash = () => <div className="splash"><div className="spinner" /></div>
 
 function Private({ children }) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, needsVerify } = useAuth()
   const loc = useLocation()
   if (loading) return <Splash />
   if (!user) return <Navigate to={ls.get('pw_onboarded', false) ? '/login' : '/welcome'} replace state={{ from: loc.pathname }} />
+  if (needsVerify) return <VerifyEmail /> // email/password accounts must verify before entering
   if (profile && !profile.setupDone && loc.pathname !== '/setup') return <Navigate to="/setup" replace />
   return children
 }

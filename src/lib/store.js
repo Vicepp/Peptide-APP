@@ -36,7 +36,22 @@ const firebaseBackend = {
     const { auth, A } = await getFb()
     const cred = await A.createUserWithEmailAndPassword(auth, email, password)
     await A.updateProfile(cred.user, { displayName: name })
-    return { uid: cred.user.uid, email, name }
+    await A.sendEmailVerification(cred.user).catch(() => {})
+    return { uid: cred.user.uid, email, name, verified: false }
+  },
+  /** Email verification (email/password accounts only; Google is already verified). */
+  async sendVerification() {
+    const { auth, A } = await getFb()
+    if (auth.currentUser) await A.sendEmailVerification(auth.currentUser)
+  },
+  /** Re-reads the account from Firebase so a just-clicked verification link is picked up. */
+  async reloadUser() {
+    const { auth } = await getFb()
+    const u = auth.currentUser
+    if (!u) return null
+    await u.reload()
+    if (u.emailVerified) await u.getIdToken(true) // refresh token so database rules see email_verified
+    return { uid: u.uid, email: u.email, name: u.displayName, photo: u.photoURL, verified: u.emailVerified }
   },
   async signIn(email, password) {
     const { auth, A } = await getFb()
@@ -183,6 +198,8 @@ const demoBackend = {
     emit()
     return user
   },
+  async sendVerification() {},
+  async reloadUser() { return { ...ls.get('pw_session', null), verified: true } },
   async google() {
     throw new Error('Google sign-in needs Firebase. Add your Firebase keys to enable it.')
   },
