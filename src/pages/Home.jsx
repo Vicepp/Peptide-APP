@@ -4,6 +4,7 @@ import { Pip, Molecule } from '../components/Art'
 import Icon from '../components/Icon'
 import PeptideCard from '../components/PeptideCard'
 import NameTag from '../components/NameTag'
+import { NotifyPrompt } from '../components/NotifySettings'
 import { useAuth } from '../lib/auth'
 import { api, today } from '../lib/store'
 import { dailyPicks, PEPTIDES, findArticle, readProgress, fmtLeft } from '../lib/content'
@@ -61,6 +62,8 @@ export default function Home() {
         <button className="btn" onClick={() => nav(`/peptides/${peptide.slug}`)}><Icon name="book" size={18} /> Start reading</button>
         <span className="hero-art"><Pip size={120} mood="happy" className="art" /></span>
       </div>
+
+      <NotifyPrompt />
 
       {/* Plan for today */}
       {todayPlan.length > 0 && (

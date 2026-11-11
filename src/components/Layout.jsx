@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { APP_NAME, FIREBASE_ENABLED } from '../config'
 import { api, ls } from '../lib/store'
 import { useActivityTracker } from '../lib/tracker'
+import { pushEnabledHere, enablePush } from '../lib/push'
 
 export function Brand() {
   return (
@@ -53,6 +54,8 @@ export default function Layout() {
   const { isAdmin, user } = useAuth()
   const { pathname } = useLocation()
   useActivityTracker(user?.uid)
+  // Keep this device's push token fresh (tokens can rotate) and show notifications while open.
+  useEffect(() => { if (user?.uid && pushEnabledHere()) enablePush(user.uid).catch(() => {}) }, [user?.uid])
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   return (
     <div className="shell">

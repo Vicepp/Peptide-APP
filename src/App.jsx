@@ -20,6 +20,7 @@ const Profile = lazy(() => import('./pages/Profile'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Community = lazy(() => import('./pages/Community'))
 const AdminUser = lazy(() => import('./pages/AdminUser'))
+const Legal = lazy(() => import('./pages/Legal'))
 
 export const Splash = () => <div className="splash"><div className="spinner" /></div>
 
@@ -35,13 +36,18 @@ function Private({ children }) {
 
 export default function App() {
   const { user, loading, isAdmin } = useAuth()
-  if (loading) return <Splash />
+  const { pathname } = useLocation()
+  const isPublic = ['/privacy', '/terms', '/support'].includes(pathname) // open without waiting for login
+  if (loading && !isPublic) return <Splash />
   return (
     <Suspense fallback={<Splash />}>
       <Routes>
         <Route path="/welcome" element={user ? <Navigate to="/" replace /> : <Onboarding />} />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <AuthPage mode="login" />} />
         <Route path="/signup" element={user ? <Navigate to="/" replace /> : <AuthPage mode="signup" />} />
+        <Route path="/privacy" element={<Legal page="privacy" />} />
+        <Route path="/terms" element={<Legal page="terms" />} />
+        <Route path="/support" element={<Legal page="support" />} />
         <Route path="/setup" element={<Private><Setup /></Private>} />
         <Route element={<Private><Layout /></Private>}>
           <Route index element={<Home />} />

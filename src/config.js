@@ -2,6 +2,11 @@
 export const APP_NAME = 'PepVella'
 export const APP_TAGLINE = 'Know your peptides. Dose with clarity.'
 
+// Contact shown on the Support / Privacy / Terms pages. Use an inbox you actually check.
+export const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@pepvella.com'
+export const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'PepVella'
+export const LEGAL_UPDATED = '10 November 2026'
+
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,

@@ -4,8 +4,10 @@ import { TopBar } from '../components/Layout'
 import Icon from '../components/Icon'
 import { Badge } from '../components/Art'
 import NameTag from '../components/NameTag'
+import NotifySettings from '../components/NotifySettings'
 import { useAuth } from '../lib/auth'
 import { api } from '../lib/store'
+import { disablePush } from '../lib/push'
 import { getTheme, setTheme } from '../lib/theme'
 import { GOALS, LEVELS, levelFor, APP_NAME, FIREBASE_ENABLED } from '../config'
 
@@ -17,6 +19,20 @@ export default function Profile() {
   const lvl = levelFor(profile?.xp)
   const goals = profile?.goals || []
   const changeTheme = (m) => { setT(m); setTheme(m) }
+  const { user } = useAuth()
+  const [deleting, setDeleting] = useState(false)
+  const [delErr, setDelErr] = useState('')
+  const deleteAccount = async () => {
+    const typed = window.prompt('This permanently deletes your account and all your data. Type DELETE to confirm.')
+    if (typed !== 'DELETE') return
+    setDeleting(true); setDelErr('')
+    try {
+      await disablePush(user.uid).catch(() => {})
+      await api.deleteAccount(user.uid)
+      nav('/welcome')
+    } catch (e) { setDelErr(e.message || 'Could not delete the account. Please try again.') }
+    setDeleting(false)
+  }
   const toggleGoal = (id) => updateProfile({ goals: goals.includes(id) ? goals.filter((g) => g !== id) : [...goals, id] })
 
   return (
@@ -60,6 +76,7 @@ export default function Profile() {
             </div>
             <span className="tiny faint">Dark mode uses a pure black & white palette.</span>
           </div>
+          <NotifySettings />
           <div className="field">
             <label>Display name</label>
             <div className="row">
@@ -83,6 +100,23 @@ export default function Profile() {
           {isAdmin && <Link to="/admin" className="list-item"><Icon name="users" className="accent" /><span className="grow bold">Admin dashboard</span><Icon name="chevron" className="faint" /></Link>}
           <button className="list-item" style={{ width: '100%', textAlign: 'left' }} onClick={async () => { await api.signOut(); nav('/login') }}>
             <Icon name="logout" style={{ color: 'var(--danger)' }} /><span className="grow bold" style={{ color: 'var(--danger)' }}>Log out</span>
+          </button>
+        </div>
+
+        <div className="section-title"><h2>Help & legal</h2></div>
+        <div className="stack">
+          <Link to="/support" className="list-item"><Icon name="info" className="accent" /><span className="grow bold">Support & FAQ</span><Icon name="chevron" className="faint" /></Link>
+          <Link to="/privacy" className="list-item"><Icon name="shield" className="accent" /><span className="grow bold">Privacy Policy</span><Icon name="chevron" className="faint" /></Link>
+          <Link to="/terms" className="list-item"><Icon name="book" className="accent" /><span className="grow bold">Terms of Use</span><Icon name="chevron" className="faint" /></Link>
+        </div>
+
+        <div className="section-title"><h2>Danger zone</h2></div>
+        <div className="card stack" style={{ borderColor: 'var(--danger)' }}>
+          <b>Delete my account</b>
+          <p className="small muted">Permanently deletes your account, progress, reading plan, experience log, analytics and community posts. This can’t be undone.</p>
+          {delErr && <div className="alert">{delErr}</div>}
+          <button className="btn sm" style={{ alignSelf: 'flex-start', background: 'var(--danger)', color: '#fff' }} disabled={deleting} onClick={deleteAccount}>
+            <Icon name="trash" size={16} /> {deleting ? 'Deleting…' : 'Delete my account'}
           </button>
         </div>
         <p className="disclaimer">{APP_NAME} · {FIREBASE_ENABLED ? 'Synced with Firebase' : 'Demo mode (browser storage)'} · Research reference only, not medical advice.</p>

@@ -48,6 +48,21 @@ Your users are stored in Firestore under `users/{uid}`, with subcollections `sch
 
 `vercel.json` already handles page refreshes on deep links.
 
+## Push notifications (daily reminder, updates, community replies)
+
+1. Firebase Console → **Project settings → Cloud Messaging → Web Push certificates → Generate key pair**. Copy the key into `VITE_FIREBASE_VAPID_KEY` (in `.env.local` and in Vercel).
+2. Firebase Console → **Project settings → Service accounts → Generate new private key**. This downloads a JSON file. In Vercel, add `FIREBASE_SERVICE_ACCOUNT` and paste the **entire file contents** as the value. Never commit this file.
+3. In Vercel, add `CRON_SECRET` (any long random string). The daily reminder runs at **18:00 UTC** (`vercel.json`; change the `schedule` if you like). It skips anyone who already opened the app that day.
+4. Redeploy. Users turn notifications on in **Profile → Settings → Notifications** (or from the prompt on Home).
+
+On iPhone/iPad, web push works only after the app is added to the Home Screen (Share → Add to Home Screen) on iOS 16.4 or later.
+
+## Store requirements
+
+- Public pages: `/privacy`, `/terms`, `/support` (no login needed). Set `VITE_SUPPORT_EMAIL` to a real inbox.
+- In-app account deletion: **Profile → Delete my account**.
+- App icons: `public/icon-192.png`, `public/icon-512.png`.
+
 ## Updating the content
 
 The peptide text comes from the Word reference guide. If the guide changes, regenerate the data:

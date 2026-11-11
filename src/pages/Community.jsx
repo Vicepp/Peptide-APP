@@ -40,6 +40,7 @@ function Comments({ post, me, members, isAdmin, onCount }) {
     setErr(''); setText('')
     const c = await api.addComment(post.id, { uid: me.uid, name: me.name, xp: me.xp, admin: !!isAdmin, body, createdAt: new Date().toISOString() })
     setList((l) => [...(l || []), c]); onCount(1)
+    api.notify({ type: 'reply', postId: post.id }).catch(() => {}) // push to the author & thread
   }
   const del = async (c) => {
     await api.deleteComment(post.id, c.id)

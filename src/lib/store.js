@@ -17,13 +17,13 @@ const ls = {
 /* Firebase backend                                                    */
 /* ------------------------------------------------------------------ */
 let fb = null
-async function getFb() {
+export async function getFb() {
   if (fb) return fb
   const [{ initializeApp }, auth, fs] = await Promise.all([
     import('firebase/app'), import('firebase/auth'), import('firebase/firestore'),
   ])
   const app = initializeApp(firebaseConfig)
-  fb = { auth: auth.getAuth(app), db: fs.getFirestore(app), A: auth, F: fs }
+  fb = { app, auth: auth.getAuth(app), db: fs.getFirestore(app), A: auth, F: fs }
   return fb
 }
 
@@ -44,6 +44,43 @@ const firebaseBackend = {
     const { auth, A } = await getFb()
     if (auth.currentUser) await A.sendEmailVerification(auth.currentUser)
   },
+  /* ---- Push notifications ---- */
+  async savePushToken(uid, token, on = true) {
+    const { db, F } = await getFb()
+    await F.setDoc(F.doc(db, 'users', uid), { pushTokens: on ? F.arrayUnion(token) : F.arrayRemove(token) }, { merge: true })
+  },
+  /** Asks the server to send a notification (admin update or community reply). */
+  async notify(payload) {
+    const { auth } = await getFb()
+    const token = await auth.currentUser?.getIdToken()
+    if (!token) return null
+    const r = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) })
+    return r.ok ? r.json() : null
+  },
+
+  /** Permanently deletes the signed-in user's account and their data. */
+  async deleteAccount(uid) {
+    const { auth, db, F } = await getFb()
+    const u = auth.currentUser
+    if (!u || u.uid !== uid) throw new Error('Please log in again.')
+    // Firebase only allows deleting an account shortly after logging in.
+    const t = await u.getIdTokenResult()
+    if (Date.now() - new Date(t.authTime).getTime() > 4 * 60 * 1000) {
+      const e = new Error('For your security, please log out, log back in, and then delete your account within 5 minutes.')
+      e.code = 'requires-recent-login'
+      throw e
+    }
+    for (const col of ['schedule', 'logs', 'activity']) {
+      const s = await F.getDocs(F.collection(db, 'users', uid, col))
+      await Promise.all(s.docs.map((d) => F.deleteDoc(d.ref)))
+    }
+    const posts = await F.getDocs(F.query(F.collection(db, 'posts'), F.where('uid', '==', uid)))
+    await Promise.all(posts.docs.map((d) => F.deleteDoc(d.ref)))
+    await F.deleteDoc(F.doc(db, 'members', uid)).catch(() => {})
+    await F.deleteDoc(F.doc(db, 'users', uid))
+    await u.delete()
+  },
+
   /** Forces a fresh login token (picks up a just-verified email for database rules). */
   async refreshToken() {
     const { auth } = await getFb()
@@ -222,6 +259,19 @@ const demoBackend = {
   },
   async sendVerification() {},
   async refreshToken() {},
+  async savePushToken() {},
+  async notify() { return null },
+  async deleteAccount(uid) {
+    const s = ls.get('pw_session', null)
+    const accounts = ls.get('pw_accounts', {})
+    if (s?.email) delete accounts[s.email]
+    ls.set('pw_accounts', accounts)
+    const users = ls.get('pw_users', {}); delete users[uid]; ls.set('pw_users', users)
+    const members = ls.get('pw_members', {}); delete members[uid]; ls.set('pw_members', members)
+    ls.set('pw_posts', ls.get('pw_posts', []).filter((p) => p.uid !== uid))
+    for (const k of ['schedule', 'logs', 'activity']) { try { localStorage.removeItem(`pw_${k}_${uid}`) } catch { /* ignore */ } }
+    ls.set('pw_session', null); emit()
+  },
   async reloadUser() { return { ...ls.get('pw_session', null), verified: true } },
   async google() {
     throw new Error('Google sign-in needs Firebase. Add your Firebase keys to enable it.')

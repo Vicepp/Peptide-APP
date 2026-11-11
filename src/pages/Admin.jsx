@@ -33,6 +33,7 @@ export default function Admin() {
   const [q, setQ] = useState('')
   const [ann, setAnn] = useState([])
   const [f, setF] = useState({ title: '', body: '' })
+  const [sentMsg, setSentMsg] = useState('')
   const { user } = useAuth()
   const nav = useNavigate()
   const load = () => {
@@ -60,6 +61,8 @@ export default function Admin() {
   const post = async (e) => {
     e.preventDefault()
     await api.postAnnouncement({ ...f, createdAt: new Date().toISOString() })
+    const r = await api.notify({ type: 'update', title: f.title, body: f.body }).catch(() => null)
+    setSentMsg(r ? `Published · push notification sent to ${r.sent} device${r.sent === 1 ? '' : 's'}` : 'Published (in-app pop-up). Push notifications are not set up yet.')
     setF({ title: '', body: '' }); load()
   }
 
@@ -113,7 +116,8 @@ export default function Admin() {
 
         <div className="section-title"><h2>Post an update</h2></div>
         <form className="card stack" onSubmit={post}>
-          <p className="small muted">Optional. Users see the newest update as a pop-up the next time they open the app.</p>
+          <p className="small muted">Optional. Users get a push notification (if they turned them on) and see the update as a pop-up next time they open the app.</p>
+          {sentMsg && <div className="alert info">{sentMsg}</div>}
           <input className="input" placeholder="Title, e.g. FDA PCAC meeting rescheduled" required value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
           <textarea className="input" placeholder="Message" required value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} />
           <button className="btn" style={{ alignSelf: 'flex-start' }}><Icon name="megaphone" size={18} /> Publish update</button>

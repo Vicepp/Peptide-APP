@@ -18,7 +18,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
       allow create, update: if isOwner(uid);
-      allow delete: if isAdmin();
+      allow delete: if isOwner(uid) || isAdmin();   // owners can delete their own account
 
       match /{sub=**} {
         allow read, write: if isOwner(uid);
